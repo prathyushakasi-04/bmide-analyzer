@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BMIDE Analyzer — Teamcenter Intelligence</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0c10;
+      --surface: #11141a;
+      --surface2: #181c24;
+      --border: #222838;
+      --accent: #00d4ff;
+      --accent2: #7b5ea7;
+      --accent3: #00ffa3;
+      --text: #e8eaf0;
+      --text-muted: #6b7591;
+      --text-dim: #9aa3bf;
+      --danger: #ff4f6a;
+      --warning: #ffb347;
+      --radius: 10px;
+      --glow: 0 0 24px rgba(0,212,255,0.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Ambient blobs */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.18;
+    }
+    .blob-1 { width: 500px; height: 500px; background: var(--accent); top: -150px; right: -100px; }
+    .blob-2 { width: 400px; height: 400px; background: var(--accent2); bottom: -100px; left: -100px; }
+    .blob-3 { width: 300px; height: 300px; background: var(--accent3); top: 50%; left: 50%; transform: translate(-50%,-50%); opacity: 0.07; }
+
+    /* Layout */
+    .shell {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    /* Header */
+    header {
+      padding: 40px 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 20px rgba(0,212,255,0.3);
+    }
+
+    .brand-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+
+    .brand-name span {
+      color: var(--accent);
+    }
+
+    .brand-sub {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .header-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--accent3);
+      border: 1px solid rgba(0,255,163,0.25);
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(32px, 5vw, 54px);
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #ffffff 30%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      color: var(--text-dim);
+      font-size: 16px;
+      max-width: 560px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* API Key section */
+    .api-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .api-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .api-input-wrap {
+      flex: 1;
+      min-width: 240px;
+      position: relative;
+    }
+
+    .api-input-wrap input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 40px 10px 14px;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .api-input-wrap input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
+    }
+
+    .api-input-wrap input::placeholder { color: var(--text-muted); }
+
+    .toggle-vis {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0;
+      transition: color 0.2s;
+    }
+    .toggle-vis:hover { color: var(--accent); }
+
+    .api-note {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    /* Mode selector */
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .mode-tab {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mode-tab:hover { border-color: var(--accent); color: var(--text); }
+    .mode-tab.active {
+      background: rgba(0,212,255,0.08);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Main grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media(max-width: 720px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Panel */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .panel-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent3);
+      box-shadow: 0 0 6px var(--accent3);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Input area */
+    .input-area {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 280px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      line-height: 1.7;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
+    }
+
+    textarea::placeholder { color: var(--text-muted); }
+
+    /* Questions */
+    .question-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .question-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
+    }
+
+    .question-input::placeholder { color: var(--text-muted); }
+
+    /* Analyze button */
+    .analyze-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent), #0099cc);
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+
+    .analyze-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(0,212,255,0.3);
+    }
+
+    .analyze-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Quick prompts */
+    .quick-prompts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 0 16px 16px;
+    }
+
+    .qp-btn {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.3px;
+    }
+
+    .qp-btn:hover {
+      border-color: var(--accent2);
+      color: var(--text);
+      background: rgba(123,94,167,0.1);
+    }
+
+    /* Output panel */
+    .output-panel {
+      grid-column: 1 / -1;
+    }
+
+    .output-body {
+      padding: 24px;
+      min-height: 200px;
+    }
+
+    /* Loading */
+    .loading-state {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+    }
+
+    .loading-state.visible { display: flex; }
+
+    .loader {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-icon {
+      font-size: 36px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .empty-state p {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    /* Result content */
+    .result-content {
+      display: none;
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--text-dim);
+    }
+
+    .result-content.visible { display: block; }
+
+    .result-content h2,
+    .result-content h3 {
+      font-family: 'Syne', sans-serif;
+      color: var(--text);
+      margin: 20px 0 10px;
+    }
+
+    .result-content h2 { font-size: 18px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .result-content h3 { font-size: 15px; color: var(--accent2); }
+
+    .result-content p { margin-bottom: 12px; }
+
+    .result-content ul, .result-content ol {
+      margin: 8px 0 16px 20px;
+    }
+
+    .result-content li { margin-bottom: 6px; }
+
+    .result-content code {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent3);
+    }
+
+    .result-content pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+
+    .result-content pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--accent3);
+      font-size: 12px;
+    }
+
+    .result-content strong { color: var(--text); font-weight: 500; }
+
+    /* Info cards */
+    .info-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .info-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+    }
+
+    .info-card-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .info-card-value {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      color: var(--accent);
+    }
+
+    /* Error */
+    .error-box {
+      display: none;
+      background: rgba(255,79,106,0.08);
+      border: 1px solid rgba(255,79,106,0.3);
+      border-radius: 8px;
+      padding: 14px 16px;
+      color: var(--danger);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+    }
+
+    .error-box.visible { display: block; }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* History */
+    .history-section {
+      margin-top: 20px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+
+    .history-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .history-item:hover { background: var(--surface2); }
+
+    .history-item-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent2);
+      flex-shrink: 0;
+    }
+
+    .history-item-text {
+      font-size: 12px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-item-time {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    /* Copy button */
+    .copy-btn {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+
+    /* Mode indicator pill */
+    .mode-pill {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(123,94,167,0.15);
+      border: 1px solid rgba(123,94,167,0.3);
+      color: var(--accent2);
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<div class="shell">
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">⚙️</div>
+      <div>
+        <div class="brand-name">BMIDE <span>Analyzer</span></div>
+        <div class="brand-sub">Teamcenter Intelligence Tool</div>
+      </div>
+    </div>
+    <div class="header-badge">AI-POWERED</div>
+  </header>
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1>Understand Your BMIDE<br/>Schema Instantly</h1>
+    <p>Paste your BMIDE XML, Business Object definitions, or configuration snippets. Get instant AI-powered analysis, documentation, and insights — powered by Claude.</p>
+  </div>
+
+  <!-- Stats row -->
+  <div class="info-cards">
+    <div class="info-card">
+      <div class="info-card-label">Supported Input</div>
+      <div class="info-card-value" style="font-size:14px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; font-weight:400;">XML · JSON · Text</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-label">Analysis Modes</div>
+      <div class="info-card-value" style="font-size:14px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; font-weight:400;">5 Modes</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-label">Powered By</div>
+      <div class="info-card-value" style="font-size:14px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; font-weight:400;">Claude Sonnet</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-label">Built By</div>
+      <div class="info-card-value" style="font-size:14px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; font-weight:400;">PK · PLM Architect</div>
+    </div>
+  </div>
+
+  <!-- API Key -->
+  <div class="api-section">
+    <div class="api-label">🔑 Anthropic API Key</div>
+    <div class="api-input-wrap">
+      <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off"/>
+      <button class="toggle-vis" onclick="toggleApiVis()" title="Show/hide">👁</button>
+    </div>
+    <div class="api-note">Stored in memory only · Never sent to any server · Get yours at console.anthropic.com</div>
+  </div>
+
+  <!-- Mode tabs -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="setMode('explain', this)">🔍 Explain Schema</button>
+    <button class="mode-tab" onclick="setMode('document', this)">📄 Generate Docs</button>
+    <button class="mode-tab" onclick="setMode('impacts', this)">⚡ Impact Analysis</button>
+    <button class="mode-tab" onclick="setMode('validate', this)">✅ Validate Config</button>
+    <button class="mode-tab" onclick="setMode('ask', this)">💬 Ask Anything</button>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="main-grid">
+
+    <!-- Input Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">BMIDE Input</div>
+        <div class="panel-dot"></div>
+      </div>
+      <div class="input-area">
+        <textarea id="bmideInput" placeholder="Paste your BMIDE content here...
+
+Examples:
+• Business Object definitions (XML)
+• Type hierarchy snippets
+• Property definitions
+• LOV configurations
+• Workflow templates
+• Dataset type definitions
+• Relation type definitions
+• Custom attribute XML
+• BMIDE export fragments"></textarea>
+
+        <div id="questionWrap" style="display:none;">
+          <input class="question-input" id="customQuestion" type="text" placeholder="Ask a specific question about your BMIDE content..."/>
+        </div>
+
+        <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">
+          ⚡ Analyze Now
+        </button>
+      </div>
+
+      <!-- Quick prompts -->
+      <div class="quick-prompts">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-muted); letter-spacing:1px; align-self:center;">QUICK PASTE:</span>
+        <button class="qp-btn" onclick="loadSample('bo')">Sample BO</button>
+        <button class="qp-btn" onclick="loadSample('property')">Property Def</button>
+        <button class="qp-btn" onclick="loadSample('lov')">LOV Config</button>
+        <button class="qp-btn" onclick="loadSample('workflow')">Workflow</button>
+        <button class="qp-btn" onclick="clearInput()">Clear</button>
+      </div>
+    </div>
+
+    <!-- Chat / Q&A Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Context & History</div>
+        <span class="mode-pill" id="modePill">EXPLAIN</span>
+      </div>
+      <div class="output-body" style="min-height:360px; overflow-y:auto;">
+        <div class="empty-state" id="contextEmpty">
+          <div class="empty-icon">🧠</div>
+          <p>Load BMIDE content and choose<br/>an analysis mode to begin.<br/><br/>The AI will explain your schema,<br/>generate docs, or answer questions.</p>
+        </div>
+        <div id="historyList"></div>
+      </div>
+    </div>
+
+    <!-- Output Panel -->
+    <div class="panel output-panel">
+      <div class="panel-header">
+        <div class="panel-title">Analysis Output</div>
+        <button class="copy-btn" onclick="copyResult()">Copy Result</button>
+      </div>
+      <div class="output-body">
+        <div class="loading-state" id="loadingState">
+          <div class="loader"></div>
+          <span>Analyzing your BMIDE content with Claude...</span>
+        </div>
+        <div class="error-box" id="errorBox"></div>
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">⚙️</div>
+          <p>Your analysis results will appear here.<br/>Paste BMIDE content → Select mode → Click Analyze.</p>
+        </div>
+        <div class="result-content" id="resultContent"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>BMIDE Analyzer · Built by <strong style="color:var(--text)">PK</strong> · PLM Architect &amp; Teamcenter Expert · 13+ years experience</p>
+    <p style="margin-top:6px;">Powered by <a href="https://anthropic.com" target="_blank">Anthropic Claude</a> · <a href="https://github.com" target="_blank">View on GitHub</a></p>
+  </footer>
+
+</div>
+
+<script>
+  // ─── State ───────────────────────────────────────────────
+  let currentMode = 'explain';
+  let analysisHistory = [];
+
+  // ─── Mode ────────────────────────────────────────────────
+  function setMode(mode, btn) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('modePill').textContent = mode.toUpperCase();
+    document.getElementById('questionWrap').style.display = mode === 'ask' ? 'block' : 'none';
+  }
+
+  // ─── API Key visibility ──────────────────────────────────
+  function toggleApiVis() {
+    const inp = document.getElementById('apiKey');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  // ─── Prompts by mode ─────────────────────────────────────
+  function buildPrompt(content) {
+    const modes = {
+      explain: `You are a senior Teamcenter BMIDE (Business Modeler IDE) expert with deep knowledge of Siemens Teamcenter PLM architecture, Business Objects, properties, LOVs, relations, and data model configuration.
+
+Analyze the following BMIDE content and provide a comprehensive explanation covering:
+1. **What it is** — identify the type of BMIDE artifact (Business Object, Property, LOV, Relation, Dataset, etc.)
+2. **Structure** — explain the hierarchy, parent-child relationships, inheritance
+3. **Key attributes** — highlight important properties, their types, and significance
+4. **Business purpose** — what real-world PLM scenario this supports
+5. **Dependencies** — what other objects or configurations this relates to
+6. **Best practices** — any observations about the design approach
+
+Use clear headings, be specific to Teamcenter terminology, and make it easy for both technical and business stakeholders to understand.
+
+BMIDE Content:
+${content}`,
+
+      document: `You are a senior Teamcenter BMIDE documentation specialist. Generate professional technical documentation for the following BMIDE content.
+
+Structure the documentation as:
+# [Artifact Name] — Technical Reference
+
+## Overview
+Brief description and business context.
+
+## Type Information
+Full type path, parent class, type UID.
+
+## Properties
+Table-style listing: Property Name | Type | Required | Description
+
+## Relationships
+Any relations, references, or dependencies.
+
+## List of Values (LOVs)
+If applicable, document any LOV bindings.
+
+## Usage Guidelines
+When and how to use this artifact in Teamcenter workflows.
+
+## Configuration Notes
+Any BMIDE-specific configuration considerations, version compatibility, or deployment notes.
+
+Write in a clean, professional documentation style suitable for a PLM team wiki.
+
+BMIDE Content:
+${content}`,
+
+      impacts: `You are a senior Teamcenter PLM Architect specializing in change impact analysis. Analyze the following BMIDE content and provide a thorough impact analysis.
+
+Cover:
+1. **Change Risk Assessment** — Low/Medium/High risk rating with rationale
+2. **Downstream Impacts** — What other types, workflows, reports, or integrations could be affected
+3. **Data Migration Considerations** — If this is a modification, what data changes might be needed
+4. **Dependent Objects** — Other BMIDE objects that reference or inherit from this
+5. **Integration Touch Points** — CAD integrations, ERP connections, reporting tools
+6. **Testing Requirements** — What must be tested after this change
+7. **Rollback Considerations** — What reversing this change would entail
+8. **Recommendations** — Step-by-step implementation guidance
+
+Be specific to Teamcenter architecture and Siemens PLM best practices.
+
+BMIDE Content:
+${content}`,
+
+      validate: `You are a Teamcenter BMIDE quality assurance expert. Review the following BMIDE configuration and validate it against best practices.
+
+Check for:
+1. **Naming Conventions** — Does it follow Teamcenter naming standards? (POM, type prefixes, etc.)
+2. **Inheritance Issues** — Proper parent class selection, unnecessary overrides
+3. **Property Configuration** — Correct data types, appropriate required/optional settings
+4. **Performance Risks** — Any patterns that could cause query or load performance issues
+5. **Security Considerations** — Access control implications
+6. **Completeness** — Missing mandatory properties or configurations
+7. **Version Compatibility** — Any version-specific concerns
+8. **Common Mistakes** — Patterns that frequently cause issues in production
+
+Rate each area: ✅ Good | ⚠️ Warning | ❌ Issue
+Provide specific remediation steps for any issues found.
+
+BMIDE Content:
+${content}`,
+
+      ask: `You are an expert Teamcenter BMIDE consultant with 15+ years of experience. The user has provided BMIDE content and has a specific question. Answer thoroughly and precisely.
+
+BMIDE Content:
+${content}`
+    };
+    return modes[currentMode] || modes.explain;
+  }
+
+  // ─── Main analyze function ────────────────────────────────
+  async function analyze() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const content = document.getElementById('bmideInput').value.trim();
+    const customQ = document.getElementById('customQuestion').value.trim();
+
+    if (!apiKey) { showError('Please enter your Anthropic API key above.'); return; }
+    if (!content) { showError('Please paste BMIDE content to analyze.'); return; }
+
+    setLoading(true);
+    clearError();
+    hideResult();
+
+    let systemPrompt = buildPrompt(content);
+    let userMessage = currentMode === 'ask'
+      ? (customQ || 'Please explain this BMIDE content in detail.')
+      : 'Analyze the BMIDE content provided in the system prompt.';
+
+    if (currentMode === 'ask' && customQ) {
+      userMessage = customQ;
+    }
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userMessage }]
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error?.message || `API Error ${res.status}`);
+      }
+
+      const data = await res.json();
+      const result = data.content?.[0]?.text || 'No response received.';
+
+      showResult(result);
+      addToHistory(content.substring(0, 60) + '...', currentMode);
+
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ─── UI helpers ──────────────────────────────────────────
+  function setLoading(v) {
+    document.getElementById('loadingState').classList.toggle('visible', v);
+    document.getElementById('analyzeBtn').disabled = v;
+    document.getElementById('analyzeBtn').textContent = v ? '⏳ Analyzing...' : '⚡ Analyze Now';
+    if (v) {
+      document.getElementById('emptyState').style.display = 'none';
+    }
+  }
+
+  function showResult(md) {
+    document.getElementById('emptyState').style.display = 'none';
+    const el = document.getElementById('resultContent');
+    el.innerHTML = markdownToHtml(md);
+    el.classList.add('visible');
+  }
+
+  function hideResult() {
+    document.getElementById('resultContent').classList.remove('visible');
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorBox');
+    el.textContent = '⚠️ ' + msg;
+    el.classList.add('visible');
+  }
+
+  function clearError() {
+    document.getElementById('errorBox').classList.remove('visible');
+  }
+
+  function copyResult() {
+    const text = document.getElementById('resultContent').innerText;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => btn.textContent = 'Copy Result', 1500);
+    });
+  }
+
+  function clearInput() {
+    document.getElementById('bmideInput').value = '';
+    document.getElementById('customQuestion').value = '';
+  }
+
+  // ─── History ─────────────────────────────────────────────
+  function addToHistory(preview, mode) {
+    analysisHistory.unshift({ preview, mode, time: new Date().toLocaleTimeString() });
+    if (analysisHistory.length > 5) analysisHistory.pop();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const el = document.getElementById('historyList');
+    const empty = document.getElementById('contextEmpty');
+    if (analysisHistory.length === 0) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    el.innerHTML = `<div class="history-title">Recent Analyses</div>` +
+      analysisHistory.map(h => `
+        <div class="history-item">
+          <div class="history-item-dot"></div>
+          <div class="history-item-text">[${h.mode.toUpperCase()}] ${h.preview}</div>
+          <div class="history-item-time">${h.time}</div>
+        </div>`).join('');
+  }
+
+  // ─── Markdown renderer ───────────────────────────────────
+  function markdownToHtml(md) {
+    return md
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/```[\w]*\n([\s\S]*?)```/gm, '<pre><code>$1</code></pre>')
+      .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+      .replace(/^[-•*] (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/^(?!<[huplo])/gm, '')
+      .replace(/<\/p><p>/g, '</p>\n<p>');
+  }
+
+  // ─── Sample data ─────────────────────────────────────────
+  const samples = {
+    bo: `<BusinessObject name="MyPart_RevisionMaster" displayName="My Part Revision" parent="ItemRevision">
+  <properties>
+    <property name="my0_drawing_number" displayName="Drawing Number" type="StringProperty" maxLength="40" required="true"/>
+    <property name="my0_material_spec" displayName="Material Specification" type="StringProperty" maxLength="100"/>
+    <property name="my0_weight_kg" displayName="Weight (kg)" type="DoubleProperty"/>
+    <property name="my0_approval_status" displayName="Approval Status" type="StringProperty" lov="MyApprovalStatusLOV"/>
+    <property name="my0_design_engineer" displayName="Design Engineer" type="UserProperty"/>
+  </properties>
+  <relations>
+    <relation name="MY_DrawingRelation" type="GRM_relation" primaryObject="MyPart_RevisionMaster" secondaryObject="ImanFile"/>
+  </relations>
+</BusinessObject>`,
+
+    property: `<PropertyDescriptor name="my0_lifecycle_phase" displayName="Lifecycle Phase" 
+  dataType="String" 
+  maxLength="50"
+  initialValue="Design"
+  isRequired="false"
+  isSearchable="true"
+  isDisplayable="true"
+  lov="MY_LifecyclePhaseLOV"
+  attachedSpecifier="ItemRevision">
+  <validationRules>
+    <rule type="LOVValidation" strict="true"/>
+  </validationRules>
+  <accessControl read="AllUsers" write="PLMAdmins,DesignEngineers"/>
+</PropertyDescriptor>`,
+
+    lov: `<ListOfValues name="MY_LifecyclePhaseLOV" displayName="Lifecycle Phase" 
+  lovType="String" 
+  usage="exhaustive">
+  <lovEntries>
+    <entry value="Design" displayValue="Design"/>
+    <entry value="Review" displayValue="Under Review"/>
+    <entry value="Approved" displayValue="Approved"/>
+    <entry value="Released" displayValue="Released"/>
+    <entry value="Obsolete" displayValue="Obsolete"/>
+  </lovEntries>
+  <interdependencies>
+    <parent property="my0_lifecycle_phase"/>
+    <child property="my0_approval_status" filterBy="Design,Review"/>
+  </interdependencies>
+</ListOfValues>`,
+
+    workflow: `<WorkflowProcess name="MY_PartApprovalProcess" displayName="Part Approval Workflow">
+  <tasks>
+    <task name="Design_Review" type="EPMReviewTask" performer="DesignReviewers">
+      <actions>
+        <action name="approve" nextTask="Manager_Approval"/>
+        <action name="reject" nextTask="Return_To_Designer"/>
+      </actions>
+    </task>
+    <task name="Manager_Approval" type="EPMReviewTask" performer="EngineeringManagers">
+      <actions>
+        <action name="approve" nextTask="Release_Item"/>
+        <action name="reject" nextTask="Design_Review"/>
+      </actions>
+    </task>
+    <task name="Release_Item" type="EPMDoTask" handler="EPM-set-property">
+      <handlerArguments property="my0_lifecycle_phase" value="Released"/>
+    </task>
+  </tasks>
+</WorkflowProcess>`
+  };
+
+  function loadSample(key) {
+    document.getElementById('bmideInput').value = samples[key] || '';
+  }
+
+  // Enter key on question input
+  document.addEventListener('DOMContentLoaded', () => {
+    const q = document.getElementById('customQuestion');
+    if (q) q.addEventListener('keydown', e => { if (e.key === 'Enter') analyze(); });
+  });
+</script>
+</body>
+</html>
